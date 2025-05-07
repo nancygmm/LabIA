@@ -4,7 +4,16 @@ import seaborn as sns
 from wordcloud import WordCloud
 from collections import Counter
 import warnings
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
+import string
+
 warnings.filterwarnings("ignore")
+
+nltk.download('punkt')
+nltk.download('stopwords')
 
 df = pd.read_csv("spam_ham.csv", encoding='latin1', sep=';', names=["label", "text"], skiprows=1)
 df = df.dropna()
@@ -60,3 +69,28 @@ plt.imshow(ham_wc, interpolation='bilinear')
 plt.axis("off")
 plt.title("WordCloud - HAM")
 plt.show()
+
+print("\n--- PREPROCESAMIENTO DE TEXTO CON NLTK ---")
+print("Transformaciones aplicadas:")
+print("1. Conversión a minúsculas: para unificar el texto y evitar duplicados como 'Free' y 'free'.")
+print("2. Eliminación de signos de puntuación: para enfocarnos en las palabras importantes.")
+print("3. Tokenización: para dividir el texto en palabras individuales.")
+print("4. Eliminación de stopwords: para eliminar palabras comunes sin valor informativo como 'the', 'and', etc.")
+print("5. Stemming con PorterStemmer: para reducir palabras a su raíz (por ejemplo, 'running' -> 'run').")
+
+stop_words = set(stopwords.words('english'))
+stemmer = PorterStemmer()
+
+def preprocess(text):
+    text = text.lower()
+    text = text.translate(str.maketrans('', '', string.punctuation))
+    tokens = text.split()
+    tokens = [word for word in tokens if word not in stop_words]
+    tokens = [stemmer.stem(word) for word in tokens]
+    return tokens
+
+df['processed'] = df['text'].apply(preprocess)
+df['processed_text'] = df['processed'].apply(lambda tokens: ' '.join(tokens))
+
+print("\nEjemplo de mensaje original y preprocesado:")
+print(df[['text', 'processed_text']].sample(3))
